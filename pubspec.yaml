@@ -1,0 +1,43 @@
+name: commitment_app
+description: "Finish It – Close loops. Unlock momentum."
+publish_to: 'none'
+
+version: 1.0.0+2
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  provider: ^6.1.2
+
+  # Local storage
+  shared_preferences: ^2.2.3
+
+  # Utilities
+  uuid: ^4.4.0
+  collection: ^1.18.0
+
+  # Charts
+  fl_chart: ^0.69.0
+
+  # In-app purchases (RevenueCat – iOS + Android compliant)
+  purchases_flutter: ^9.10.6
+
+  # iOS-style icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
