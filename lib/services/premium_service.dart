@@ -8,7 +8,7 @@ class PremiumService extends ChangeNotifier {
       'goog_olOPoIRZFnUhxFkzKYiaGIzDWFf';
 
   // ✅ RevenueCat Entitlement Identifier
-  static const String _entitlementId = 'premium';
+  static const String _entitlementId = 'Finish It Pro';
 
   bool _inited = false;
   bool _busy = false;
