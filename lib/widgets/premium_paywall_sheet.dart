@@ -1,159 +1,135 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../services/premium_service.dart';
 
 class PremiumPaywallSheet extends StatelessWidget {
   const PremiumPaywallSheet({super.key});
 
-  Package? _bestPackage(Offerings? offerings) {
-    final current = offerings?.current;
-    final pkgs = current?.availablePackages ?? <Package>[];
-    if (pkgs.isEmpty) return null;
-
-    // Prefer monthly, then annual, then first available.
-    for (final p in pkgs) {
-      final id = p.identifier.toLowerCase();
-      if (id.contains('month')) return p;
-    }
-    for (final p in pkgs) {
-      final id = p.identifier.toLowerCase();
-      if (id.contains('year') || id.contains('annual')) return p;
-    }
-    return pkgs.first;
-  }
-
-  String _priceLabel(Package? pkg) {
-    final price = pkg?.storeProduct.priceString;
-    if (price == null || price.isEmpty) return '';
-    return price;
-  }
-
   @override
   Widget build(BuildContext context) {
     final premium = context.watch<PremiumService>();
-    final scheme = Theme.of(context).colorScheme;
-
-    final pkg = _bestPackage(premium.offerings);
-    final price = _priceLabel(pkg);
-
-    final busy = premium.isBusy;
-    final error = premium.lastError;
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Unlock Premium',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Get more momentum with unlimited sessions and deeper insights.',
+            const SizedBox(height: 8),
+
+            const Text(
+              'Finish It Premium',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                color: scheme.onSurfaceVariant,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            const Text(
+              'Unlock all premium features with a one-time purchase.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 14),
-            const Divider(height: 1),
-            const SizedBox(height: 14),
-            const _BenefitRow(text: 'Unlimited sessions/day (Free is capped at 3/day)'),
-            const SizedBox(height: 10),
-            const _BenefitRow(text: 'Full history (Free shows last 3)'),
-            const SizedBox(height: 10),
-            const _BenefitRow(text: 'Premium insights (streaks, averages, totals)'),
-            const SizedBox(height: 10),
-            const _BenefitRow(text: 'Tag sessions with categories'),
-            const SizedBox(height: 10),
-            const _BenefitRow(text: 'Category analytics'),
-            const SizedBox(height: 14),
 
-            if (error != null && error.trim().isNotEmpty) ...[
-              Text(
-                error,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.red,
-                ),
-              ),
-              const SizedBox(height: 10),
-            ],
+            const SizedBox(height: 20),
+
+            _BenefitRow(text: 'Unlimited sessions per day'),
+            _BenefitRow(text: 'Category tags & analytics'),
+            _BenefitRow(text: 'Full history & insights'),
+            _BenefitRow(text: 'Future premium features included'),
+
+            const SizedBox(height: 24),
 
             SizedBox(
-              width: double.infinity,
+              height: 48,
               child: ElevatedButton(
-                onPressed: busy
+                onPressed: premium.isBusy || premium.offerings?.current == null
                     ? null
                     : () async {
-                        HapticFeedback.mediumImpact();
+                        HapticFeedback.lightImpact();
 
-                        // If offerings are missing, try a reload first.
-                        if (premium.offerings == null) {
-                          await premium.reload();
+                        final package =
+                            premium.offerings!.current!.availablePackages.first;
+
+                        await premium.purchasePackage(package);
+
+                        if (!context.mounted) return;
+
+                        if (premium.isPremium) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Premium unlocked.'),
+                            ),
+                          );
                         }
-
-                        final chosen = _bestPackage(premium.offerings);
-                        if (chosen == null) {
-                          // Still no packages — do nothing; error will show via lastError if any.
-                          return;
-                        }
-
-                        await premium.purchasePackage(chosen);
                       },
-                child: busy
+                child: premium.isBusy
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
+                        width: 20,
+                        height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text(price.isEmpty ? 'Go Premium' : 'Go Premium • $price'),
+                    : const Text(
+                        'Unlock Premium',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () {
+
+            const SizedBox(height: 12),
+
+            TextButton(
+              onPressed: premium.isBusy
+                  ? null
+                  : () async {
                       HapticFeedback.selectionClick();
-                      Navigator.pop(context);
+                      await premium.restore();
+
+                      if (!context.mounted) return;
+
+                      if (premium.isPremium) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Premium restored.'),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content:
+                                Text('No previous purchases found to restore.'),
+                          ),
+                        );
+                      }
                     },
-                    child: const Text('Not now'),
-                  ),
-                ),
-                Expanded(
-                  child: TextButton(
-                    onPressed: busy
-                        ? null
-                        : () async {
-                            HapticFeedback.selectionClick();
-                            await premium.restore();
-                          },
-                    child: const Text('Restore'),
-                  ),
-                ),
-              ],
+              child: const Text(
+                'Restore purchases',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            TextButton(
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                Navigator.pop(context);
+              },
+              child: const Text('Not now'),
             ),
           ],
         ),
@@ -168,17 +144,20 @@ class _BenefitRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.check_circle_outline, size: 18),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          const Icon(Icons.check, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

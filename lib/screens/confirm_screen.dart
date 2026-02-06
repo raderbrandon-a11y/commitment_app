@@ -174,6 +174,8 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                   HapticFeedback.lightImpact();
 
                   await engine.refreshHistory();
+                  if (!context.mounted) return;
+
                   if (!isPremium && engine.sessionsLoggedToday() >= 3) {
                     _showUpsellBottomSheet(context);
                     return;

@@ -1,9 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/outcomes.dart';
 import '../models/session.dart';
@@ -19,38 +17,7 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  static const String _prefsDebugPremiumKey = 'debug_premium_override';
-  bool _debugPremiumOverride = false;
-  bool _debugLoaded = false;
-
   int? _touchedIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDebugPremiumOverride();
-  }
-
-  Future<void> _loadDebugPremiumOverride() async {
-    if (!kDebugMode) return;
-    final prefs = await SharedPreferences.getInstance();
-    final v = prefs.getBool(_prefsDebugPremiumKey) ?? false;
-    if (!mounted) return;
-    setState(() {
-      _debugPremiumOverride = v;
-      _debugLoaded = true;
-    });
-  }
-
-  bool _isPremiumSafe(Object? premium) {
-    if (premium == null) return false;
-    try {
-      final v = (premium as dynamic).isPremium;
-      return v == true;
-    } catch (_) {
-      return false;
-    }
-  }
 
   void _showPaywall() {
     HapticFeedback.selectionClick();
@@ -112,8 +79,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final engine = context.watch<SessionEngine>();
     final premium = context.watch<PremiumService>();
 
-    final realPremium = _isPremiumSafe(premium);
-    final isPremium = kDebugMode ? _debugPremiumOverride : realPremium;
+    final isPremium = premium.isPremium;
 
     final visibleSessions = engine.visibleHistory(isPremium: isPremium);
     final allSessions = engine.history;
@@ -151,7 +117,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final counts = [completed, partial, barely, unlogged];
     final total = counts.fold<int>(0, (a, b) => a + b);
 
-    String percentLabel(int value) {
+    String sectionTitle(int value) {
+      if (!isPremium) return ''; // ✅ Free: no percentages on pie
       if (total <= 0 || value <= 0) return '';
       final p = (value / total) * 100.0;
       if (p < 5) return '';
@@ -163,13 +130,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return List.generate(4, (i) {
         final value = counts[i];
         if (value == 0) return PieChartSectionData(value: 0, showTitle: false);
+
         final touched = _touchedIndex == i;
         return PieChartSectionData(
           value: value.toDouble(),
           color: colors[i],
           radius: touched ? 62 : 56,
           showTitle: true,
-          title: percentLabel(value),
+          title: sectionTitle(value),
           titleStyle: TextStyle(
             fontSize: touched ? 14 : 12,
             fontWeight: FontWeight.w900,
@@ -224,26 +192,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
           },
         ),
         actions: [
-          if (kDebugMode)
-            IconButton(
-              tooltip: 'Debug Premium',
-              icon: Icon(
-                _debugPremiumOverride
-                    ? Icons.workspace_premium
-                    : Icons.workspace_premium_outlined,
-              ),
-              onPressed: () async {
-                HapticFeedback.selectionClick();
-                final prefs = await SharedPreferences.getInstance();
-                final next = !_debugPremiumOverride;
-                await prefs.setBool(_prefsDebugPremiumKey, next);
-                if (!mounted) return;
-                setState(() {
-                  _debugPremiumOverride = next;
-                  _debugLoaded = true;
-                });
-              },
-            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () async {
@@ -259,18 +207,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
           padding: const EdgeInsets.all(16),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            if (kDebugMode && !_debugLoaded)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Center(
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              ),
-
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(18),
@@ -338,8 +274,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   children: [
                     const Text(
                       'Outcomes',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 16),
                     Center(
@@ -411,7 +346,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             const SizedBox(height: 16),
 
             if (isPremium) _CategoryAnalyticsCard(sessions: allSessions),
-
             if (isPremium) const SizedBox(height: 16),
 
             Text(
@@ -444,9 +378,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         '${s.durationMinutes} min • ${_prettyOutcome(s.outcome)}'
                         '${isPremium && (s.category?.isNotEmpty ?? false) ? ' • ${s.category}' : ''}',
                       ),
-                      trailing: s.endedEarly
-                          ? const Icon(Icons.timer_off_outlined)
-                          : null,
+                      trailing:
+                          s.endedEarly ? const Icon(Icons.timer_off_outlined) : null,
                     );
                   },
                 ),
@@ -494,7 +427,8 @@ class _CategoryAnalyticsCard extends StatelessWidget {
     final rows = map.entries.toList()
       ..sort((a, b) => b.value.total.compareTo(a.value.total));
 
-    Widget cell(String text, {bool bold = false, TextAlign align = TextAlign.left}) {
+    Widget cell(String text,
+        {bool bold = false, TextAlign align = TextAlign.left}) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
@@ -502,7 +436,9 @@ class _CategoryAnalyticsCard extends StatelessWidget {
           textAlign: align,
           style: TextStyle(
             fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
-            color: align == TextAlign.left ? scheme.onSurfaceVariant : scheme.onSurface,
+            color: align == TextAlign.left
+                ? scheme.onSurfaceVariant
+                : scheme.onSurface,
           ),
         ),
       );
@@ -520,14 +456,21 @@ class _CategoryAnalyticsCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Header row
             Row(
               children: [
                 Expanded(flex: 4, child: cell('Category', bold: true)),
-                Expanded(flex: 2, child: cell('Total', bold: true, align: TextAlign.right)),
-                Expanded(flex: 2, child: cell('C', bold: true, align: TextAlign.right)),
-                Expanded(flex: 2, child: cell('P', bold: true, align: TextAlign.right)),
-                Expanded(flex: 2, child: cell('B', bold: true, align: TextAlign.right)),
+                Expanded(
+                    flex: 2,
+                    child: cell('Total', bold: true, align: TextAlign.right)),
+                Expanded(
+                    flex: 2,
+                    child: cell('C', bold: true, align: TextAlign.right)),
+                Expanded(
+                    flex: 2,
+                    child: cell('P', bold: true, align: TextAlign.right)),
+                Expanded(
+                    flex: 2,
+                    child: cell('B', bold: true, align: TextAlign.right)),
               ],
             ),
             Divider(height: 1, color: scheme.outlineVariant),
@@ -537,10 +480,20 @@ class _CategoryAnalyticsCard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(flex: 4, child: cell(e.key)),
-                  Expanded(flex: 2, child: cell('${e.value.total}', align: TextAlign.right)),
-                  Expanded(flex: 2, child: cell('${e.value.completed}', align: TextAlign.right)),
-                  Expanded(flex: 2, child: cell('${e.value.partial}', align: TextAlign.right)),
-                  Expanded(flex: 2, child: cell('${e.value.barely}', align: TextAlign.right)),
+                  Expanded(
+                      flex: 2,
+                      child: cell('${e.value.total}', align: TextAlign.right)),
+                  Expanded(
+                      flex: 2,
+                      child: cell('${e.value.completed}',
+                          align: TextAlign.right)),
+                  Expanded(
+                      flex: 2,
+                      child:
+                          cell('${e.value.partial}', align: TextAlign.right)),
+                  Expanded(
+                      flex: 2,
+                      child: cell('${e.value.barely}', align: TextAlign.right)),
                 ],
               ),
               Divider(height: 1, color: scheme.outlineVariant),
