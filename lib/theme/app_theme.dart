@@ -24,15 +24,14 @@ class AppTheme {
 
     return base.copyWith(
       // ✅ Global ElevatedButton styling
+      // Fix iOS text clipping WITHOUT setting global textStyle here.
+      // (Setting textStyle globally can unexpectedly override typography.)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: navy,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          minimumSize: const Size.fromHeight(52), // ✅ prevents iOS clipping
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -45,10 +44,7 @@ class AppTheme {
           backgroundColor: navy,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          minimumSize: const Size.fromHeight(52), // ✅ prevents iOS clipping
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

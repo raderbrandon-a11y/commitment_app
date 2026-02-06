@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/outcomes.dart';
 import '../state/session_engine.dart';
+import '../theme/app_theme.dart';
 
 class ResultsScreen extends StatelessWidget {
   const ResultsScreen({super.key});
@@ -78,11 +79,15 @@ class ResultsScreen extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: ElevatedButton(
                     onPressed: () {
                       HapticFeedback.selectionClick();
                       engine.resultsGoToHistory();
                     },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.coral,
+                      foregroundColor: Colors.white,
+                    ),
                     child: const Text('View history'),
                   ),
                 ),

@@ -19,7 +19,6 @@ class PremiumPaywallSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 8),
-
             const Text(
               'Finish It Premium',
               textAlign: TextAlign.center,
@@ -28,9 +27,7 @@ class PremiumPaywallSheet extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-
             const SizedBox(height: 12),
-
             const Text(
               'Unlock all premium features with a one-time purchase.',
               textAlign: TextAlign.center,
@@ -39,26 +36,24 @@ class PremiumPaywallSheet extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-
             const SizedBox(height: 20),
-
-            _BenefitRow(text: 'Unlimited sessions per day'),
-            _BenefitRow(text: 'Category tags & analytics'),
-            _BenefitRow(text: 'Full history & insights'),
-            _BenefitRow(text: 'Future premium features included'),
-
+            const _BenefitRow(text: 'Unlimited sessions per day'),
+            const _BenefitRow(text: 'Category tags & analytics'),
+            const _BenefitRow(text: 'Full history & insights'),
+            const _BenefitRow(text: 'Future premium features included'),
             const SizedBox(height: 24),
 
+            // ✅ iOS text clipping fix: give the button more height + line height
             SizedBox(
-              height: 48,
+              height: 56,
               child: ElevatedButton(
                 onPressed: premium.isBusy || premium.offerings?.current == null
                     ? null
                     : () async {
                         HapticFeedback.lightImpact();
 
-                        final package =
-                            premium.offerings!.current!.availablePackages.first;
+                        final package = premium
+                            .offerings!.current!.availablePackages.first;
 
                         await premium.purchasePackage(package);
 
@@ -67,9 +62,7 @@ class PremiumPaywallSheet extends StatelessWidget {
                         if (premium.isPremium) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Premium unlocked.'),
-                            ),
+                            const SnackBar(content: Text('Premium unlocked.')),
                           );
                         }
                       },
@@ -81,9 +74,11 @@ class PremiumPaywallSheet extends StatelessWidget {
                       )
                     : const Text(
                         'Unlock Premium',
+                        maxLines: 1,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
+                          height: 1.2,
                         ),
                       ),
               ),
@@ -103,9 +98,7 @@ class PremiumPaywallSheet extends StatelessWidget {
                       if (premium.isPremium) {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Premium restored.'),
-                          ),
+                          const SnackBar(content: Text('Premium restored.')),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
