@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/outcomes.dart';
 import '../models/session.dart';
 import '../services/premium_service.dart';
+import '../services/review_service.dart';
 import '../state/session_engine.dart';
 import '../widgets/premium_paywall_sheet.dart';
 
@@ -234,7 +235,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
 
             if (!isPremium)
@@ -272,11 +272,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Outcomes',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Outcomes',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            HapticFeedback.selectionClick();
+                            await ReviewService.requestReviewIfAvailable();
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Thanks for the feedback!')),
+                            );
+                          },
+                          child: const Text(
+                            'Leave a review',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     Center(
                       child: SizedBox(
                         width: 220,
@@ -378,8 +401,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         '${s.durationMinutes} min • ${_prettyOutcome(s.outcome)}'
                         '${isPremium && (s.category?.isNotEmpty ?? false) ? ' • ${s.category}' : ''}',
                       ),
-                      trailing:
-                          s.endedEarly ? const Icon(Icons.timer_off_outlined) : null,
+                      trailing: s.endedEarly
+                          ? const Icon(Icons.timer_off_outlined)
+                          : null,
                     );
                   },
                 ),
@@ -427,8 +451,7 @@ class _CategoryAnalyticsCard extends StatelessWidget {
     final rows = map.entries.toList()
       ..sort((a, b) => b.value.total.compareTo(a.value.total));
 
-    Widget cell(String text,
-        {bool bold = false, TextAlign align = TextAlign.left}) {
+    Widget cell(String text, {bool bold = false, TextAlign align = TextAlign.left}) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
@@ -455,50 +478,29 @@ class _CategoryAnalyticsCard extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
-
             Row(
               children: [
                 Expanded(flex: 4, child: cell('Category', bold: true)),
-                Expanded(
-                    flex: 2,
-                    child: cell('Total', bold: true, align: TextAlign.right)),
-                Expanded(
-                    flex: 2,
-                    child: cell('C', bold: true, align: TextAlign.right)),
-                Expanded(
-                    flex: 2,
-                    child: cell('P', bold: true, align: TextAlign.right)),
-                Expanded(
-                    flex: 2,
-                    child: cell('B', bold: true, align: TextAlign.right)),
+                Expanded(flex: 2, child: cell('Total', bold: true, align: TextAlign.right)),
+                Expanded(flex: 2, child: cell('C', bold: true, align: TextAlign.right)),
+                Expanded(flex: 2, child: cell('P', bold: true, align: TextAlign.right)),
+                Expanded(flex: 2, child: cell('B', bold: true, align: TextAlign.right)),
               ],
             ),
             Divider(height: 1, color: scheme.outlineVariant),
             const SizedBox(height: 2),
-
             for (final e in rows) ...[
               Row(
                 children: [
                   Expanded(flex: 4, child: cell(e.key)),
-                  Expanded(
-                      flex: 2,
-                      child: cell('${e.value.total}', align: TextAlign.right)),
-                  Expanded(
-                      flex: 2,
-                      child: cell('${e.value.completed}',
-                          align: TextAlign.right)),
-                  Expanded(
-                      flex: 2,
-                      child:
-                          cell('${e.value.partial}', align: TextAlign.right)),
-                  Expanded(
-                      flex: 2,
-                      child: cell('${e.value.barely}', align: TextAlign.right)),
+                  Expanded(flex: 2, child: cell('${e.value.total}', align: TextAlign.right)),
+                  Expanded(flex: 2, child: cell('${e.value.completed}', align: TextAlign.right)),
+                  Expanded(flex: 2, child: cell('${e.value.partial}', align: TextAlign.right)),
+                  Expanded(flex: 2, child: cell('${e.value.barely}', align: TextAlign.right)),
                 ],
               ),
               Divider(height: 1, color: scheme.outlineVariant),
             ],
-
             const SizedBox(height: 6),
             Text(
               'C = Completed, P = Partial, B = Barely started',
@@ -532,10 +534,9 @@ class _EmptyHistoryState extends StatelessWidget {
             const SizedBox(height: 22),
             Text(
               'No sessions yet',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(

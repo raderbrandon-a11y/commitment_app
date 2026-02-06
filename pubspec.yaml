@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  in_app_review: ^2.0.9
 
   # State management
   provider: ^6.1.2
