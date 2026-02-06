@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'state/session_engine.dart';
 import 'services/clock.dart';
@@ -7,6 +8,7 @@ import 'services/prefs_storage_service.dart';
 import 'services/premium_service.dart';
 
 // Screens
+import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/task_screen.dart';
 import 'screens/duration_screen.dart';
@@ -91,9 +93,45 @@ class FinishItApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Finish It',
         theme: theme,
-        home: const AppRoot(),
+        home: const _EntryGate(),
       ),
     );
+  }
+}
+
+/// Gates the app on first launch:
+/// - If onboarding not seen -> OnboardingScreen
+/// - Else -> AppRoot (normal flow)
+class _EntryGate extends StatefulWidget {
+  const _EntryGate();
+
+  @override
+  State<_EntryGate> createState() => _EntryGateState();
+}
+
+class _EntryGateState extends State<_EntryGate> {
+  bool? _seen;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSeen();
+  }
+
+  Future<void> _loadSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seen = prefs.getBool(OnboardingScreen.seenKey) ?? false;
+    if (!mounted) return;
+    setState(() => _seen = seen);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Tiny blank scaffold prevents a flash of AppRoot while prefs loads.
+    if (_seen == null) {
+      return const Scaffold(body: SizedBox());
+    }
+    return _seen! ? const AppRoot() : const OnboardingScreen();
   }
 }
 
