@@ -2,7 +2,7 @@ name: commitment_app
 description: "Finish It – Close loops. Unlock momentum."
 publish_to: 'none'
 
-version: 1.0.3
+version: 1.0.4
 
 environment:
   sdk: ^3.10.7
