@@ -2,7 +2,7 @@ name: commitment_app
 description: "Finish It – Close loops. Unlock momentum."
 publish_to: 'none'
 
-version: 1.0.0+2
+version: 1.0.3
 
 environment:
   sdk: ^3.10.7
@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   in_app_review: ^2.0.9
 
   # State management
@@ -37,8 +38,18 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
 
+  # App icon generator (dev tool)
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icon.png
+  adaptive_icon_background: "#161526"
+  adaptive_icon_foreground: assets/icon/icon_foreground.png
+
 flutter:
   uses-material-design: true
-
   assets:
     - assets/images/
+    - assets/icon/
